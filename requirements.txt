@@ -1,1 +1,2 @@
-# utils/__init__.py
+aiogram==3.20.0
+aiosqlite==0.21.0# utils/__init__.py
