@@ -15,15 +15,13 @@ def main_menu() -> InlineKeyboardMarkup:
 
 def support_menu() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    username = config.OWNER_USERNAME.lstrip("@")
-    kb.button(text="✉️ ارتباط با پشتیبانی", url=f"https://t.me/{username}")
+    kb.button(text="✉️ ارسال پیام به پشتیبانی", callback_data="user_send_support")
     kb.button(text="🔙 بازگشت", callback_data="user_back_main")
     kb.adjust(1)
     return kb.as_markup()
 
 
 def join_menu(channels, joined_button: bool = True) -> InlineKeyboardMarkup:
-    """ساخت کیبورد عضویت اجباری از روی کانال‌های باقی‌مانده."""
     kb = InlineKeyboardBuilder()
     for ch in channels:
         title = ch["title"] or "کانال"
