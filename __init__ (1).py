@@ -1,7 +1,7 @@
 # database/db.py
 import aiosqlite
 import time
-from typing import Optional, List, Tuple
+from typing import Optional, List
 
 import config
 
@@ -59,11 +59,20 @@ class Database:
                 key TEXT PRIMARY KEY,
                 value TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS support_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                username TEXT,
+                first_name TEXT,
+                message_text TEXT,
+                message_type TEXT DEFAULT 'text',
+                sent_at INTEGER
+            );
             """
         )
         await self.conn.commit()
 
-        # مقدار پیش‌فرض عضویت اجباری
         cur = await self.conn.execute(
             "SELECT value FROM settings WHERE key = ?", ("force_join",)
         )
@@ -161,21 +170,10 @@ class Database:
     async def count_admins(self) -> int:
         cur = await self.conn.execute("SELECT COUNT(*) AS c FROM admins")
         row = await cur.fetchone()
-        # +1 برای مالک
         return row["c"] + 1
 
     # ---------- فایل‌ها ----------
-    async def add_file(
-        self,
-        file_code: str,
-        file_id: str,
-        file_type: str,
-        file_name: str,
-        file_size: int,
-        caption: str,
-        storage_chat_id: int,
-        storage_message_id: int,
-    ):
+    async def add_file(self, file_code, file_id, file_type, file_name, file_size, caption, storage_chat_id, storage_message_id):
         await self.conn.execute(
             """
             INSERT INTO files
@@ -183,17 +181,8 @@ class Database:
              storage_chat_id, storage_message_id, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (
-                file_code,
-                file_id,
-                file_type,
-                file_name,
-                file_size,
-                caption,
-                storage_chat_id,
-                storage_message_id,
-                int(time.time()),
-            ),
+            (file_code, file_id, file_type, file_name, file_size, caption,
+             storage_chat_id, storage_message_id, int(time.time())),
         )
         await self.conn.commit()
 
@@ -204,9 +193,7 @@ class Database:
         return await cur.fetchone()
 
     async def delete_file(self, file_code: str):
-        await self.conn.execute(
-            "DELETE FROM files WHERE file_code = ?", (file_code,)
-        )
+        await self.conn.execute("DELETE FROM files WHERE file_code = ?", (file_code,))
         await self.conn.commit()
 
     async def list_files(self, limit: int = 50, offset: int = 0) -> List[aiosqlite.Row]:
@@ -219,11 +206,7 @@ class Database:
     async def search_files(self, query: str) -> List[aiosqlite.Row]:
         like = f"%{query}%"
         cur = await self.conn.execute(
-            """
-            SELECT * FROM files
-            WHERE file_name LIKE ? OR file_code LIKE ?
-            ORDER BY created_at DESC LIMIT 50
-            """,
+            "SELECT * FROM files WHERE file_name LIKE ? OR file_code LIKE ? ORDER BY created_at DESC LIMIT 50",
             (like, like),
         )
         return await cur.fetchall()
@@ -234,9 +217,7 @@ class Database:
         return row["c"]
 
     # ---------- کانال‌ها ----------
-    async def add_channel(
-        self, channel_id: int, title: str, username: str, invite_link: str
-    ):
+    async def add_channel(self, channel_id, title, username, invite_link):
         await self.conn.execute(
             """
             INSERT INTO channels (channel_id, title, username, invite_link, added_at)
@@ -251,9 +232,7 @@ class Database:
         await self.conn.commit()
 
     async def remove_channel(self, channel_id: int):
-        await self.conn.execute(
-            "DELETE FROM channels WHERE channel_id = ?", (channel_id,)
-        )
+        await self.conn.execute("DELETE FROM channels WHERE channel_id = ?", (channel_id,))
         await self.conn.commit()
 
     async def get_channels(self) -> List[aiosqlite.Row]:
@@ -262,18 +241,13 @@ class Database:
 
     # ---------- تنظیمات ----------
     async def get_setting(self, key: str) -> Optional[str]:
-        cur = await self.conn.execute(
-            "SELECT value FROM settings WHERE key = ?", (key,)
-        )
+        cur = await self.conn.execute("SELECT value FROM settings WHERE key = ?", (key,))
         row = await cur.fetchone()
         return row["value"] if row else None
 
     async def set_setting(self, key: str, value: str):
         await self.conn.execute(
-            """
-            INSERT INTO settings (key, value) VALUES (?, ?)
-            ON CONFLICT(key) DO UPDATE SET value = excluded.value
-            """,
+            "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             (key, value),
         )
         await self.conn.commit()
@@ -281,6 +255,45 @@ class Database:
     async def is_force_join(self) -> bool:
         val = await self.get_setting("force_join")
         return val == "1"
+
+    # ---------- پیام‌های پشتیبانی ----------
+    async def add_support_message(self, user_id: int, username: str, first_name: str, message_text: str, message_type: str = "text"):
+        await self.conn.execute(
+            """
+            INSERT INTO support_messages (user_id, username, first_name, message_text, message_type, sent_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (user_id, username, first_name, message_text, message_type, int(time.time())),
+        )
+        await self.conn.commit()
+
+    async def get_support_messages(self, filter_type: str = "all", limit: int = 10, offset: int = 0) -> List[aiosqlite.Row]:
+        now = int(time.time())
+        if filter_type == "today":
+            since = now - 86400
+        elif filter_type == "week":
+            since = now - 604800
+        else:
+            since = 0
+        cur = await self.conn.execute(
+            "SELECT * FROM support_messages WHERE sent_at >= ? ORDER BY sent_at DESC LIMIT ? OFFSET ?",
+            (since, limit, offset),
+        )
+        return await cur.fetchall()
+
+    async def count_support_messages(self, filter_type: str = "all") -> int:
+        now = int(time.time())
+        if filter_type == "today":
+            since = now - 86400
+        elif filter_type == "week":
+            since = now - 604800
+        else:
+            since = 0
+        cur = await self.conn.execute(
+            "SELECT COUNT(*) AS c FROM support_messages WHERE sent_at >= ?", (since,)
+        )
+        row = await cur.fetchone()
+        return row["c"]
 
 
 db = Database(config.DB_PATH)

@@ -13,6 +13,7 @@ def admin_main() -> InlineKeyboardMarkup:
     kb.button(text="👥 مدیریت ادمین‌ها", callback_data="adm_admins")
     kb.button(text="🚫 مدیریت کاربران", callback_data="adm_users")
     kb.button(text="📢 عضویت اجباری", callback_data="adm_channels")
+    kb.button(text="💬 پیام‌های پشتیبانی", callback_data="adm_support_msgs")
     kb.button(text="💾 دریافت بکاپ", callback_data="adm_backup")
     kb.button(text="⚙️ تنظیمات", callback_data="adm_settings")
     kb.adjust(2)
@@ -90,4 +91,35 @@ def confirm_delete_kb(file_code: str) -> InlineKeyboardMarkup:
     kb.button(text="✅ بله، حذف کن", callback_data=f"file_delyes:{file_code}")
     kb.button(text="❌ خیر", callback_data=f"file_view:{file_code}")
     kb.adjust(2)
+    return kb.as_markup()
+
+
+def support_msg_actions_kb(user_id: int) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    kb.button(text="↩️ پاسخ", callback_data=f"sup_reply:{user_id}")
+    kb.button(text="🚫 بن کاربر", callback_data=f"sup_ban:{user_id}")
+    kb.button(text="ℹ️ اطلاعات کاربر", callback_data=f"sup_info:{user_id}")
+    kb.adjust(1)
+    return kb.as_markup()
+
+
+def support_list_kb(filter_type: str, page: int, total: int, per_page: int) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    # فیلترها
+    filters = [("امروز", "today"), ("هفته اخیر", "week"), ("همه", "all")]
+    for label, ftype in filters:
+        mark = "✅ " if ftype == filter_type else ""
+        kb.button(text=f"{mark}{label}", callback_data=f"sup_filter:{ftype}:0")
+    kb.adjust(3)
+    # صفحه‌بندی
+    nav = []
+    if page > 0:
+        nav.append(InlineKeyboardButton(text="◀️ قبلی", callback_data=f"sup_filter:{filter_type}:{page - 1}"))
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    nav.append(InlineKeyboardButton(text=f"📄 {page + 1}/{total_pages}", callback_data="sup_noop"))
+    if (page + 1) * per_page < total:
+        nav.append(InlineKeyboardButton(text="بعدی ▶️", callback_data=f"sup_filter:{filter_type}:{page + 1}"))
+    if nav:
+        kb.row(*nav)
+    kb.row(InlineKeyboardButton(text="🔙 بازگشت", callback_data="adm_back_main"))
     return kb.as_markup()

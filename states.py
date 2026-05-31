@@ -7,7 +7,6 @@ import config
 
 def main_menu() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="📥 دریافت فایل", callback_data="user_getfile")
     kb.button(text="📞 تماس با پشتیبانی", callback_data="user_support")
     kb.adjust(1)
     return kb.as_markup()
