@@ -41,3 +41,7 @@ class AddChannel(StatesGroup):
 
 class RemoveChannel(StatesGroup):
     waiting_channel = State()
+
+
+class SupportMessage(StatesGroup):
+    waiting_message = State()
