@@ -1,47 +1,23 @@
-# states/states.py
-from aiogram.fsm.state import State, StatesGroup
+# config.py
 
+# اطلاعات اصلی ربات
+BOT_TOKEN = "8176940583:AAE9LZKyrBiK4nZk_pHeRGL6icKhYlPPS24"
+BOT_NAME = "آپلودر تریاک"
 
-class UploadFile(StatesGroup):
-    waiting_file = State()
-    waiting_caption = State()
+# مالک ربات
+OWNER_ID = 1375809015
+OWNER_USERNAME = "@silktoch"
 
+# کانال اصلی
+MAIN_CHANNEL_ID = -1001966712871
+MAIN_CHANNEL_USERNAME = "@teriak18"
 
-class SearchFile(StatesGroup):
-    waiting_query = State()
+# کانال ذخیره فایل‌ها (Storage Channel)
+# ربات باید در این کانال ادمین باشد. آیدی را در صورت نیاز تغییر دهید.
+STORAGE_CHANNEL_ID = -1001966712871
 
+# مسیر دیتابیس
+DB_PATH = "teriak.db"
 
-class Broadcast(StatesGroup):
-    waiting_message = State()
-
-
-class AddAdmin(StatesGroup):
-    waiting_id = State()
-
-
-class RemoveAdmin(StatesGroup):
-    waiting_id = State()
-
-
-class BanUser(StatesGroup):
-    waiting_id = State()
-
-
-class UnbanUser(StatesGroup):
-    waiting_id = State()
-
-
-class UserInfo(StatesGroup):
-    waiting_id = State()
-
-
-class AddChannel(StatesGroup):
-    waiting_channel = State()
-
-
-class RemoveChannel(StatesGroup):
-    waiting_channel = State()
-
-
-class SupportMessage(StatesGroup):
-    waiting_message = State()
+# نام کاربری ربات (اختیاری). اگر خالی بماند، به‌صورت خودکار از تلگرام گرفته می‌شود.
+BOT_USERNAME = ""
